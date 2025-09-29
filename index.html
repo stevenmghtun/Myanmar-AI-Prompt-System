@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="my">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Myanmar AI Prompt Generation System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Padauk', sans-serif;
+            background-color: #f0f2f5;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5, #818cf8);
+        }
+        
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="text-gray-800">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center gradient-bg px-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-2">စနစ်သို့ဝင်ရောက်ရန်</h1>
+            <p class="text-center text-gray-500 mb-8">Myanmar AI Prompt System</p>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="username" class="block text-gray-700 text-sm font-bold mb-2">အသုံးပြုသူအမည်</label>
+                    <input type="text" id="username" name="username" placeholder="သင်၏အမည်ထည့်ပါ" value="system_admin"
+                        class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-gray-700 text-sm font-bold mb-2">စကားဝှက်</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" value="password123"
+                        class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div id="login-error" class="text-red-500 text-sm mb-4 text-center hidden"></div>
+                <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300">
+                    ဝင်ရောက်မည်
+                </button>
+            </form>
+            <div class="text-center mt-4">
+                <p class="text-sm text-gray-500">Test Accounts:</p>
+                <p class="text-xs text-gray-500">system_admin / admin / manager / user (pw: password123)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app-container" class="hidden">
+        <!-- Notification Bar -->
+        <div id="notification-bar" class="bg-yellow-200 border-b-2 border-yellow-300 text-yellow-800 p-2 text-center text-sm hidden">
+            <!-- Notification content will be injected here -->
+        </div>
+
+        <div class="flex h-screen bg-gray-100">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="w-64 bg-white shadow-md flex-shrink-0 flex flex-col transition-all duration-300 -translate-x-full md:translate-x-0">
+                <div class="p-4 border-b">
+                    <h2 class="text-xl font-bold text-indigo-600">AI Prompt System</h2>
+                </div>
+                <nav class="flex-grow p-4 space-y-2">
+                    <a href="#" onclick="showView('text-to-image-view')" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-indigo-100 nav-link">
+                        <i data-lucide="image" class="w-5 h-5 mr-3"></i> Text to Image
+                    </a>
+                    <a href="#" onclick="showView('image-to-text-view')" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-indigo-100 nav-link">
+                        <i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Image to Text
+                    </a>
+                    <a href="#" onclick="showView('text-to-video-view')" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-indigo-100 nav-link">
+                        <i data-lucide="video" class="w-5 h-5 mr-3"></i> Text to Video
+                    </a>
+                    <a href="#" id="member-management-link" onclick="showView('member-management-view')" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-indigo-100 nav-link hidden">
+                        <i data-lucide="users" class="w-5 h-5 mr-3"></i> Member Management
+                    </a>
+                    <a href="#" id="settings-link" onclick="showView('settings-view')" class="flex items-center p-3 rounded-lg text-gray-700 hover:bg-indigo-100 nav-link hidden">
+                        <i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings
+                    </a>
+                </nav>
+                <div class="p-4 border-t">
+                    <div id="user-profile-widget" class="flex items-center">
+                        <img src="https://placehold.co/40x40/E2E8F0/4A5568?text=U" alt="User" class="w-10 h-10 rounded-full mr-3">
+                        <div>
+                            <p id="widget-username" class="font-semibold text-sm">Username</p>
+                            <p id="widget-role" class="text-xs text-gray-500">Role</p>
+                        </div>
+                    </div>
+                    <button onclick="showView('profile-view')" class="mt-4 w-full text-sm flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-200">
+                        <i data-lucide="user-circle" class="w-4 h-4 mr-2"></i> Profile
+                    </button>
+                    <button onclick="handleLogout()" class="mt-2 w-full text-sm flex items-center justify-center p-2 rounded-lg text-red-600 hover:bg-red-100">
+                        <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Logout
+                    </button>
+                </div>
+            </aside>
+            
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <!-- Top Bar (for mobile) -->
+                <header class="md:hidden bg-white shadow-md p-4 flex justify-between items-center">
+                    <button id="menu-toggle-btn" class="text-gray-600">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h2 class="text-xl font-bold text-indigo-600">AI Prompt System</h2>
+                    <div></div>
+                </header>
+
+                <!-- Main Content -->
+                <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 md:p-8">
+                    
+                    <!-- Text to Image View -->
+                    <div id="text-to-image-view" class="main-view">
+                        <h1 class="text-3xl font-bold mb-6">Text to Image Prompt Generator</h1>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <textarea id="t2i-input" class="w-full p-3 border rounded-md h-32" placeholder="ပုံဖော်လိုသော အကြောင်းအရာကို မြန်မာလိုရေးပါ... (ဥပမာ - ရွှေတိဂုံဘုရားတွင် နေဝင်ချိန်)"></textarea>
+                            <button onclick="generateT2IPrompt()" class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition">Prompt နှင့် ပုံ ဖန်တီးမည်</button>
+                            
+                            <!-- Generated Prompt -->
+                            <div class="mt-6 p-4 bg-gray-100 rounded-md min-h-[100px]">
+                                <h3 class="font-semibold mb-2">Generated Prompt:</h3>
+                                <p id="t2i-output" class="text-gray-700"></p>
+                            </div>
+
+                            <!-- Generated Image -->
+                            <div class="mt-6">
+                                 <h3 class="font-semibold mb-2">Generated Image:</h3>
+                                 <div id="t2i-image-container" class="w-full aspect-square bg-gray-100 rounded-md flex items-center justify-center relative">
+                                    <!-- Loading Spinner -->
+                                    <div id="t2i-loader" class="hidden absolute">
+                                        <svg class="animate-spin h-10 w-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                     <img id="t2i-image-result" src="https://placehold.co/512x512/e2e8f0/4a5568?text=Image+Result" alt="Generated Image" class="rounded-md object-cover w-full h-full">
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image to Text View -->
+                    <div id="image-to-text-view" class="main-view hidden">
+                        <h1 class="text-3xl font-bold mb-6">Image to Text Prompt Generator</h1>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <label class="block mb-2 text-sm font-medium text-gray-900" for="i2t-upload">ပုံရွေးပါ</label>
+                            <input class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none" id="i2t-upload" type="file">
+                            <button onclick="generateI2TPrompt()" class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition">Prompt ဖန်တီးမည်</button>
+                            <div class="mt-6 p-4 bg-gray-100 rounded-md min-h-[100px]">
+                                <h3 class="font-semibold mb-2">Generated Prompt:</h3>
+                                <p id="i2t-output" class="text-gray-700"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Text to Video View -->
+                    <div id="text-to-video-view" class="main-view hidden">
+                        <h1 class="text-3xl font-bold mb-6">Text to Video Prompt Generator</h1>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <textarea id="t2v-input" class="w-full p-3 border rounded-md h-32" placeholder="ဗီဒီယို ဖန်တီးလိုသော အကြောင်းအရာကို မြန်မာလိုရေးပါ... (ဥပမာ - မန္တလေးကျုံးဘေးတွင် စက်ဘီးစီးနေသော မိန်းကလေး)"></textarea>
+                            <button onclick="generateT2VPrompt()" class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition">Prompt ဖန်တီးမည်</button>
+                            <div class="mt-6 p-4 bg-gray-100 rounded-md min-h-[100px]">
+                                <h3 class="font-semibold mb-2">Generated Prompt:</h3>
+                                <p id="t2v-output" class="text-gray-700"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Member Management View -->
+                    <div id="member-management-view" class="main-view hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h1 class="text-3xl font-bold">Member Management</h1>
+                            <button id="add-new-user-btn" onclick="openUserModal(null)" class="hidden bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 flex items-center">
+                                <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Add New Member
+                            </button>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="border-b bg-gray-50">
+                                    <tr>
+                                        <th class="p-4">Username</th>
+                                        <th class="p-4">Role</th>
+                                        <th class="p-4">Subscription</th>
+                                        <th class="p-4">Expires On</th>
+                                        <th class="p-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="member-table-body">
+                                    <!-- User rows will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile View -->
+                    <div id="profile-view" class="main-view hidden">
+                        <h1 class="text-3xl font-bold mb-6">သင်၏ Profile</h1>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Edit Profile -->
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h2 class="text-xl font-semibold mb-4 border-b pb-2">Profile ပြင်ဆင်ရန်</h2>
+                                <form id="profile-form">
+                                    <div class="mb-4">
+                                        <label for="profile-username" class="block text-sm font-medium">Username</label>
+                                        <input type="text" id="profile-username" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" disabled>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="profile-fullname" class="block text-sm font-medium">Full Name</label>
+                                        <input type="text" id="profile-fullname" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Update Profile</button>
+                                </form>
+                            </div>
+                            <!-- Change Password -->
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h2 class="text-xl font-semibold mb-4 border-b pb-2">စကားဝှက်ပြောင်းရန်</h2>
+                                <form id="password-form">
+                                    <div class="mb-4">
+                                        <label for="current-password" class="block text-sm font-medium">လက်ရှိ စကားဝှက်</label>
+                                        <input type="password" id="current-password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="new-password" class="block text-sm font-medium">စကားဝှက်အသစ်</label>
+                                        <input type="password" id="new-password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="confirm-password" class="block text-sm font-medium">စကားဝှက်အသစ် (အတည်ပြု)</label>
+                                        <input type="password" id="confirm-password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Change Password</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Settings View (System Admin only) -->
+                    <div id="settings-view" class="main-view hidden">
+                        <h1 class="text-3xl font-bold mb-6">System Settings</h1>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Subscription Fees (MMK)</h2>
+                            <form id="fees-form">
+                                <div class="mb-4">
+                                    <label for="monthly-fee" class="block text-sm font-medium">Monthly Fee</label>
+                                    <input type="number" id="monthly-fee" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="yearly-fee" class="block text-sm font-medium">Yearly Fee</label>
+                                    <input type="number" id="yearly-fee" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Save Fees</button>
+                            </form>
+                        </div>
+                    </div>
+
+                </main>
+            </div>
+        </div>
+        
+        <footer class="text-center text-sm text-gray-500 py-4 bg-gray-100">
+            Developed by MMITSG
+        </footer>
+    </div>
+    
+    <!-- User Add/Edit Modal -->
+    <div id="user-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg modal" id="user-modal-content">
+            <div class="p-6 border-b">
+                <h2 id="modal-title" class="text-2xl font-bold">Add New Member</h2>
+            </div>
+            <div class="p-6">
+                <form id="user-form">
+                    <input type="hidden" id="user-id">
+                    <div class="mb-4">
+                        <label for="modal-username" class="block text-sm font-medium">Username</label>
+                        <input type="text" id="modal-username" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="modal-fullname" class="block text-sm font-medium">Full Name</label>
+                        <input type="text" id="modal-fullname" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4" id="password-fields-container">
+                        <label for="modal-password" class="block text-sm font-medium">Password</label>
+                        <input type="password" id="modal-password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label for="modal-role" class="block text-sm font-medium">Role</label>
+                        <select id="modal-role" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="User">User</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Admin">Admin</option>
+                            <option value="System Admin">System Admin</option>
+                        </select>
+                    </div>
+                    <div class="mb-4" id="subscription-fields-container">
+                         <label class="block text-sm font-medium">Subscription</label>
+                         <div class="mt-2 space-y-2">
+                             <div class="flex items-center">
+                                <input type="radio" name="subscription" value="monthly" id="sub-monthly" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                <label for="sub-monthly" class="ml-3 block text-sm font-medium text-gray-700">Monthly</label>
+                             </div>
+                             <div class="flex items-center">
+                                <input type="radio" name="subscription" value="yearly" id="sub-yearly" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                                <label for="sub-yearly" class="ml-3 block text-sm font-medium text-gray-700">Yearly</label>
+                            </div>
+                         </div>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                <button type="button" onclick="closeUserModal()" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button>
+                <button type="button" onclick="handleUserFormSubmit()" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 translate-y-10 transition-all duration-300">
+        <p id="toast-message">Success!</p>
+    </div>
+
+    <script>
+        // --- DATA MOCKUP (Simulates a database, used as a fallback) ---
+        let users_mock = [
+            { id: 1, username: 'system_admin', password: 'password123', fullName: 'System Administrator', role: 'System Admin', subscription: { plan: 'Yearly', startDate: '2025-01-01', endDate: '2026-01-01' } },
+            { id: 2, username: 'admin', password: 'password123', fullName: 'Admin User', role: 'Admin', subscription: { plan: 'Yearly', startDate: '2025-02-15', endDate: '2026-02-15' } },
+            { id: 3, username: 'manager', password: 'password123', fullName: 'Manager User', role: 'Manager', subscription: { plan: 'Monthly', startDate: '2025-09-01', endDate: '2025-10-01' } },
+            { id: 4, username: 'user', password: 'password123', fullName: 'Normal User', role: 'User', subscription: { plan: 'Monthly', startDate: '2025-09-15', endDate: '2025-10-15' } },
+            { id: 5, username: 'expired_user', password: 'password123', fullName: 'Expired User', role: 'User', subscription: { plan: 'Monthly', startDate: '2025-08-01', endDate: '2025-09-01' } }
+        ];
+
+        let subscriptionFees = {
+            monthly: 10000,
+            yearly: 100000
+        };
+
+        // --- GLOBAL STATE ---
+        let currentUser = null;
+        let allUsers = []; // Will be populated from API or mock
+
+        // --- DOM ELEMENTS ---
+        const loginScreen = document.getElementById('login-screen');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const memberTableBody = document.getElementById('member-table-body');
+
+        // --- PERMISSION MAPPING ---
+        const PERMISSIONS = {
+            CAN_ADD_USER: ['Admin', 'System Admin'],
+            CAN_DELETE_USER: ['Admin', 'System Admin'],
+            CAN_EDIT_USER: ['Manager', 'Admin', 'System Admin'],
+            CAN_EXTEND_SUBSCRIPTION: ['System Admin'],
+            CAN_VIEW_MEMBER_MANAGEMENT: ['Manager', 'Admin', 'System Admin'],
+            CAN_VIEW_SETTINGS: ['System Admin'],
+            CAN_SET_FEES: ['System Admin']
+        };
+
+        // --- HELPER FUNCTIONS ---
+        const hasPermission = (permission) => {
+            if (!currentUser) return false;
+            return PERMISSIONS[permission].includes(currentUser.role);
+        }
+
+        const showToast = (message, isError = false) => {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.className = `fixed top-5 right-5 text-white px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 -translate-y-0`;
+            setTimeout(() => {
+                toast.className = toast.className.replace('opacity-100 -translate-y-0', 'opacity-0 translate-y-10');
+            }, 3000);
+        }
+        
+        const formatDate = (dateString) => {
+            if(!dateString) return 'N/A';
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        }
+
+        // --- AUTHENTICATION ---
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            const username = loginForm.username.value;
+            const password = loginForm.password.value;
+            loginError.classList.add('hidden');
+            const submitButton = loginForm.querySelector('button');
+            submitButton.disabled = true;
+            submitButton.textContent = 'ဝင်ရောက်နေသည်...';
+
+            try {
+                // --- CLOUDFLARE INTEGRATION POINT ---
+                // This is where you would call your Cloudflare Worker API
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Login failed');
+                }
+
+                const user = await response.json();
+                
+                currentUser = user;
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                loginScreen.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                await initializeDashboard();
+
+            } catch (error) {
+                console.error('Login API error:', error);
+                // --- Fallback to mock data for demonstration ---
+                console.log("API call failed, falling back to mock data for demo.");
+                const mockUser = users_mock.find(u => u.username === username && u.password === password);
+                if (mockUser) {
+                    currentUser = mockUser;
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    loginScreen.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    await initializeDashboard();
+                } else {
+                    loginError.textContent = 'အသုံးပြုသူအမည် သို့မဟုတ် စကားဝှက်မှားယွင်းနေပါသည်။';
+                    loginError.classList.remove('hidden');
+                }
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'ဝင်ရောက်မည်';
+            }
+        };
+
+        const handleLogout = () => {
+            currentUser = null;
+            sessionStorage.removeItem('currentUser');
+            appContainer.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+        };
+
+        // --- UI RENDERING & NAVIGATION ---
+        const showView = (viewId) => {
+            document.querySelectorAll('.main-view').forEach(view => view.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar.classList.contains('-translate-x-full')) {
+               sidebar.classList.add('-translate-x-full');
+            }
+        };
+
+        const initializeDashboard = async () => {
+            if (!currentUser) return;
+
+            // Update user widget
+            document.getElementById('widget-username').textContent = currentUser.fullName;
+            document.getElementById('widget-role').textContent = currentUser.role;
+
+            // Show/hide UI elements based on role
+            document.getElementById('member-management-link').classList.toggle('hidden', !hasPermission('CAN_VIEW_MEMBER_MANAGEMENT'));
+            document.getElementById('settings-link').classList.toggle('hidden', !hasPermission('CAN_VIEW_SETTINGS'));
+            document.getElementById('add-new-user-btn').classList.toggle('hidden', !hasPermission('CAN_ADD_USER'));
+            
+            // Populate views
+            await renderMemberTable();
+            populateProfileForm();
+            populateSettingsForm();
+            checkSubscriptionStatus();
+
+            showView('text-to-image-view');
+        };
+
+        // --- SUBSCRIPTION & NOTIFICATIONS ---
+        const checkSubscriptionStatus = () => {
+            // ... (no changes in this function)
+            const notificationBar = document.getElementById('notification-bar');
+            if (!currentUser || !currentUser.subscription) {
+                notificationBar.classList.add('hidden');
+                return;
+            }
+
+            const today = new Date();
+            const expiryDate = new Date(currentUser.subscription.endDate);
+            const diffTime = expiryDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            let message = "Welcome! New updates are available for prompt generation models.";
+
+            if (diffDays <= 0) {
+                message = `သင်၏ member သက်တမ်းကုန်ဆုံးသွားပါပြီ (${formatDate(currentUser.subscription.endDate)})။ System Admin ထံ ဆက်သွယ်ပါ။`;
+                 notificationBar.className = 'bg-red-200 border-b-2 border-red-300 text-red-800 p-2 text-center text-sm';
+            } else if (diffDays <= 7) {
+                message = `သင်၏ member သက်တမ်းသည် ${diffDays} ရက်အတွင်း ကုန်ဆုံးတော့မည်။`;
+                 notificationBar.className = 'bg-yellow-200 border-b-2 border-yellow-300 text-yellow-800 p-2 text-center text-sm';
+            }
+            
+            notificationBar.textContent = message;
+            notificationBar.classList.remove('hidden');
+        }
+
+
+        // --- MEMBER MANAGEMENT ---
+        const renderMemberTable = async () => {
+            if (!hasPermission('CAN_VIEW_MEMBER_MANAGEMENT')) return;
+
+            memberTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">Loading members...</td></tr>';
+            
+            try {
+                // --- CLOUDFLARE INTEGRATION POINT ---
+                const response = await fetch('/api/users');
+                if (!response.ok) throw new Error('Failed to fetch users');
+                const userList = await response.json();
+                allUsers = userList;
+
+            } catch (error) {
+                console.error("Could not fetch users from API:", error);
+                // --- Fallback to mock data for demonstration ---
+                console.log("Falling back to local mock data for demo.");
+                allUsers = users_mock;
+            }
+            
+            memberTableBody.innerHTML = '';
+            if (allUsers.length === 0) {
+                 memberTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">No members found.</td></tr>';
+                 return;
+            }
+
+            allUsers.forEach(user => {
+                const isExpired = new Date(user.subscription.endDate) < new Date();
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="p-4 font-medium">${user.username}</td>
+                    <td class="p-4">${user.role}</td>
+                    <td class="p-4">${user.subscription.plan}</td>
+                    <td class="p-4 ${isExpired ? 'text-red-500' : ''}">${formatDate(user.subscription.endDate)}</td>
+                    <td class="p-4">
+                        <div class="flex items-center space-x-2">
+                           ${hasPermission('CAN_EXTEND_SUBSCRIPTION') ? `<button onclick="extendSubscription(${user.id})" class="text-green-600 hover:text-green-800 p-1" title="Extend Subscription"><i data-lucide="calendar-plus" class="w-5 h-5"></i></button>` : ''}
+                           ${hasPermission('CAN_EDIT_USER') ? `<button onclick="openUserModal(${user.id})" class="text-blue-600 hover:text-blue-800 p-1" title="Edit User"><i data-lucide="edit" class="w-5 h-5"></i></button>` : ''}
+                           ${hasPermission('CAN_DELETE_USER') ? `<button onclick="deleteUser(${user.id})" class="text-red-600 hover:text-red-800 p-1" title="Delete User"><i data-lucide="trash-2" class="w-5 h-5"></i></button>` : ''}
+                        </div>
+                    </td>
+                `;
+                memberTableBody.appendChild(tr);
+            });
+            lucide.createIcons();
+        };
+
+        const openUserModal = (userId) => {
+            // ... (no major changes, but now uses 'allUsers' array)
+            const modal = document.getElementById('user-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const form = document.getElementById('user-form');
+            form.reset();
+            
+            const passwordContainer = document.getElementById('password-fields-container');
+            const subContainer = document.getElementById('subscription-fields-container');
+
+            if (userId) {
+                const user = allUsers.find(u => u.id === userId);
+                if (!user) return;
+                modalTitle.textContent = 'Edit Member';
+                document.getElementById('user-id').value = user.id;
+                document.getElementById('modal-username').value = user.username;
+                document.getElementById('modal-fullname').value = user.fullName;
+                document.getElementById('modal-role').value = user.role;
+                passwordContainer.classList.add('hidden'); 
+                subContainer.classList.add('hidden');
+            } else {
+                modalTitle.textContent = 'Add New Member';
+                document.getElementById('user-id').value = '';
+                passwordContainer.classList.remove('hidden');
+                subContainer.classList.remove('hidden');
+            }
+            modal.classList.remove('hidden');
+        };
+        
+        const closeUserModal = () => {
+            document.getElementById('user-modal').classList.add('hidden');
+        }
+
+        const handleUserFormSubmit = () => {
+            // TODO: This should also be converted to an API call (/api/users POST or PUT)
+            // For now, it modifies the local array for demonstration.
+            // ... (rest of the function is the same, using `allUsers` and `users_mock` for fallback)
+             const userId = document.getElementById('user-id').value;
+            const username = document.getElementById('modal-username').value;
+            const fullName = document.getElementById('modal-fullname').value;
+            const role = document.getElementById('modal-role').value;
+            const password = document.getElementById('modal-password').value;
+
+            if (userId) { // Editing existing user
+                const userIndex = allUsers.findIndex(u => u.id == userId);
+                if (userIndex > -1) {
+                    allUsers[userIndex].username = username;
+                    allUsers[userIndex].fullName = fullName;
+                    allUsers[userIndex].role = role;
+                    showToast('User updated successfully!');
+                }
+            } else { // Adding new user
+                if (!username || !password) {
+                    showToast('Username and password are required for new users.', true);
+                    return;
+                }
+                const subscriptionType = document.querySelector('input[name="subscription"]:checked');
+                if(!subscriptionType){
+                    showToast('Please select a subscription plan.', true);
+                    return;
+                }
+                
+                const newId = Math.max(...allUsers.map(u => u.id)) + 1;
+                const today = new Date();
+                const endDate = new Date(today);
+                if(subscriptionType.value === 'monthly'){
+                    endDate.setMonth(endDate.getMonth() + 1);
+                } else {
+                    endDate.setFullYear(endDate.getFullYear() + 1);
+                }
+
+                const newUser = {
+                    id: newId,
+                    username,
+                    password,
+                    fullName,
+                    role,
+                    subscription: {
+                        plan: subscriptionType.value === 'monthly' ? 'Monthly' : 'Yearly',
+                        startDate: today.toISOString().split('T')[0],
+                        endDate: endDate.toISOString().split('T')[0]
+                    }
+                };
+                allUsers.push(newUser);
+                showToast('New user added successfully!');
+            }
+            closeUserModal();
+            renderMemberTable(); // Re-render table with local changes
+        };
+
+        const deleteUser = (userId) => {
+             // TODO: This should be a `fetch('/api/users/' + userId, { method: 'DELETE' })` call
+            if (confirm(`Are you sure you want to delete this user? This cannot be undone.`)) {
+                allUsers = allUsers.filter(u => u.id !== userId);
+                renderMemberTable();
+                showToast('User deleted successfully!');
+            }
+        };
+
+        const extendSubscription = (userId) => {
+             // TODO: This should be a `fetch('/api/users/' + userId + '/extend', { method: 'POST' })` call
+            if (confirm('Extend this user\'s subscription by one year?')) {
+                const userIndex = allUsers.findIndex(u => u.id === userId);
+                if (userIndex > -1) {
+                    const user = allUsers[userIndex];
+                    const currentEndDate = new Date(user.subscription.endDate);
+                    currentEndDate.setFullYear(currentEndDate.getFullYear() + 1);
+                    user.subscription.endDate = currentEndDate.toISOString().split('T')[0];
+                    renderMemberTable();
+                    showToast('Subscription extended successfully!');
+                }
+            }
+        };
+        
+        // --- PROFILE & SETTINGS MANAGEMENT ---
+        // These would also be converted to API calls in a real application
+        // ... (no changes in these functions)
+        const populateProfileForm = () => {
+            document.getElementById('profile-username').value = currentUser.username;
+            document.getElementById('profile-fullname').value = currentUser.fullName;
+        };
+
+        document.getElementById('profile-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const fullName = document.getElementById('profile-fullname').value;
+            currentUser.fullName = fullName;
+            const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+            if (userIndex > -1) {
+                allUsers[userIndex].fullName = fullName;
+            }
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            initializeDashboard(); // to update widget
+            showToast('Profile updated successfully!');
+        });
+        
+        document.getElementById('password-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const currentPw = document.getElementById('current-password').value;
+            const newPw = document.getElementById('new-password').value;
+            const confirmPw = document.getElementById('confirm-password').value;
+
+            if (currentPw !== currentUser.password) {
+                showToast('Current password is incorrect.', true);
+                return;
+            }
+            if (newPw !== confirmPw) {
+                showToast('New passwords do not match.', true);
+                return;
+            }
+            if(newPw.length < 6) {
+                showToast('Password must be at least 6 characters.', true);
+                return;
+            }
+
+            currentUser.password = newPw;
+            const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+            if (userIndex > -1) {
+                allUsers[userIndex].password = newPw;
+            }
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            document.getElementById('password-form').reset();
+            showToast('Password changed successfully!');
+        });
+        
+        const populateSettingsForm = () => {
+            if(hasPermission('CAN_SET_FEES')){
+                 document.getElementById('monthly-fee').value = subscriptionFees.monthly;
+                 document.getElementById('yearly-fee').value = subscriptionFees.yearly;
+            }
+        }
+        
+        document.getElementById('fees-form').addEventListener('submit', (e) => {
+             e.preventDefault();
+             if(!hasPermission('CAN_SET_FEES')) {
+                 showToast('You do not have permission to perform this action.', true);
+                 return;
+             }
+             subscriptionFees.monthly = document.getElementById('monthly-fee').value;
+             subscriptionFees.yearly = document.getElementById('yearly-fee').value;
+             showToast('Subscription fees updated successfully!');
+        });
+
+
+        // --- AI PROMPT GENERATORS (PLACEHOLDERS) ---
+        // ... (no changes in these functions)
+        const generateT2IPrompt = () => {
+            const input = document.getElementById('t2i-input').value;
+            if (!input) {
+                showToast('ကျေးဇူးပြု၍ အကြောင်းအရာတစ်ခုခု ရေးထည့်ပါ။', true);
+                return;
+            }
+            
+            const output = `cinematic photo, ${input} in Myanmar, hyperdetailed, intricately detailed, insane details, 8k, photorealistic, sharp focus, masterpiece`;
+            document.getElementById('t2i-output').textContent = output;
+
+            const imageResult = document.getElementById('t2i-image-result');
+            const loader = document.getElementById('t2i-loader');
+
+            loader.classList.remove('hidden');
+            imageResult.classList.add('hidden');
+
+            setTimeout(() => {
+                const imageUrl = `https://picsum.photos/512/512?random=${Math.random()}`;
+                imageResult.src = imageUrl;
+                
+                imageResult.onload = () => {
+                    loader.classList.add('hidden');
+                    imageResult.classList.remove('hidden');
+                    showToast('ပုံအသစ်ကို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။');
+                };
+                imageResult.onerror = () => {
+                    loader.classList.add('hidden');
+                    imageResult.src = 'https://placehold.co/512x512/f87171/ffffff?text=Error';
+                    imageResult.classList.remove('hidden');
+                    showToast('ပုံကို ဖန်တီးရာတွင် အမှားအယွင်း ဖြစ်ပွားပါသည်။', true);
+                };
+
+            }, 2000);
+        };
+
+        const generateI2TPrompt = () => {
+            const fileInput = document.getElementById('i2t-upload');
+            if (fileInput.files.length === 0) {
+                 showToast('Please upload an image first.', true);
+                return;
+            }
+            document.getElementById('i2t-output').textContent = 'Describe the image with details about its composition, colors, and subject matter. Focus on creating a prompt that could regenerate a similar image.';
+        };
+        
+        const generateT2VPrompt = () => {
+            const input = document.getElementById('t2v-input').value;
+            if (!input) return;
+            const output = `professional cinematic video of ${input}, 4k, high resolution, detailed, dynamic motion, vivid colors, realistic lighting`;
+            document.getElementById('t2v-output').textContent = output;
+        };
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loginForm.addEventListener('submit', handleLogin);
+
+            const storedUser = sessionStorage.getItem('currentUser');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                loginScreen.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                initializeDashboard();
+            }
+            
+            const menuBtn = document.getElementById('menu-toggle-btn');
+            const sidebar = document.getElementById('sidebar');
+            menuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+            });
+        });
+        
+        /*
+        --- CLOUDFLARE WORKER EXAMPLES (Server-Side Code) ---
+
+        NOTE: The following code is NOT for this HTML file. It's an example
+        of what you would deploy as a Cloudflare Worker script (e.g., in a `/functions` folder
+        if you are using Cloudflare Pages with Functions). This code would typically interact
+        with a Cloudflare D1 database instead of a mock array.
+
+        --- Example: `functions/api/login.js` ---
+
+        export async function onRequestPost(context) {
+            // In a real app, you would connect to a database like Cloudflare D1
+            // and securely check hashed passwords. This is a simplified example.
+            const { request, env } = context; // env contains bindings to D1, KV etc.
+            const { username, password } = await request.json();
+
+            // This is a placeholder for a D1 database query
+            // const { results } = await env.DB.prepare("SELECT * FROM users WHERE username = ?").bind(username).all();
+            // const user = results.length ? results[0] : null;
+
+            // Simplified mock for demonstration
+             const MOCK_USERS_DB = [
+                { id: 1, username: 'system_admin', password: 'password123', fullName: 'System Administrator', role: 'System Admin', subscription: { plan: 'Yearly', startDate: '2025-01-01', endDate: '2026-01-01' } },
+                { id: 2, username: 'admin', password: 'password123', fullName: 'Admin User', role: 'Admin', subscription: { plan: 'Yearly', startDate: '2025-02-15', endDate: '2026-02-15' } }
+             ];
+            const user = MOCK_USERS_DB.find(u => u.username === username && u.password === password);
+
+
+            if (user) {
+                // In a real app, you should not send the password back.
+                // You would typically return a JWT (JSON Web Token) for authentication.
+                const { password, ...userToSend } = user;
+                return new Response(JSON.stringify(userToSend), {
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            } else {
+                return new Response(JSON.stringify({ message: 'Invalid credentials' }), {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+        }
+
+        --- Example: `functions/api/users.js` ---
+        export async function onRequestGet(context) {
+            // const { results } = await context.env.DB.prepare("SELECT id, username, fullName, role, subscription FROM users").all();
+            
+            // Simplified mock for demonstration
+            const MOCK_USERS_DB = [
+                { id: 1, username: 'system_admin', password: 'password123', fullName: 'System Administrator', role: 'System Admin', subscription: { plan: 'Yearly', startDate: '2025-01-01', endDate: '2026-01-01' } },
+                { id: 2, username: 'admin', password: 'password123', fullName: 'Admin User', role: 'Admin', subscription: { plan: 'Yearly', startDate: '2025-02-15', endDate: '2026-02-15' } },
+                { id: 3, username: 'manager', password: 'password123', fullName: 'Manager User', role: 'Manager', subscription: { plan: 'Monthly', startDate: '2025-09-01', endDate: '2025-10-01' } },
+                { id: 4, username: 'user', password: 'password123', fullName: 'Normal User', role: 'User', subscription: { plan: 'Monthly', startDate: '2025-09-15', endDate: '2025-10-15' } },
+                { id: 5, username: 'expired_user', password: 'password123', fullName: 'Expired User', role: 'User', subscription: { plan: 'Monthly', startDate: '2025-08-01', endDate: '2025-09-01' } }
+            ];
+
+            const usersWithoutPasswords = MOCK_USERS_DB.map(u => {
+                const { password, ...user } = u;
+                return user;
+            });
+
+            return new Response(JSON.stringify(usersWithoutPasswords), {
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+        */
+
+    </script>
+</body>
+</html>
+
